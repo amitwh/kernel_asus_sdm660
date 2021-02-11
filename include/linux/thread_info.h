@@ -13,6 +13,7 @@
 struct timespec;
 struct compat_timespec;
 
+#include <asm/current.h>
 #ifdef CONFIG_THREAD_INFO_IN_TASK
 #define current_thread_info() ((struct thread_info *)current)
 #endif
