@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2018, 2020 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1597,7 +1597,7 @@ static int msm_pcm_chmap_ctl_put(struct snd_kcontrol *kcontrol,
 	prtd = substream->runtime->private_data;
 	if (prtd) {
 		prtd->set_channel_map = true;
-			for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL_V2; i++)
+			for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL; i++)
 				prtd->channel_map[i] =
 				(char)(ucontrol->value.integer.value[i]);
 	}
@@ -1640,11 +1640,11 @@ static int msm_pcm_chmap_ctl_get(struct snd_kcontrol *kcontrol,
 	prtd = substream->runtime->private_data;
 
 	if (prtd && prtd->set_channel_map == true) {
-		for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL_V2; i++)
+		for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL; i++)
 			ucontrol->value.integer.value[i] =
 					(int)prtd->channel_map[i];
 	} else {
-		for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL_V2; i++)
+		for (i = 0; i < PCM_FORMAT_MAX_NUM_CHANNEL; i++)
 			ucontrol->value.integer.value[i] = 0;
 	}
 
@@ -1663,7 +1663,7 @@ static int msm_pcm_add_chmap_controls(struct snd_soc_pcm_runtime *rtd)
 	pr_debug("%s, Channel map cntrl add\n", __func__);
 	ret = snd_pcm_add_chmap_ctls(pcm, SNDRV_PCM_STREAM_PLAYBACK,
 				     snd_pcm_std_chmaps,
-				     PCM_FORMAT_MAX_NUM_CHANNEL_V2, 0,
+				     PCM_FORMAT_MAX_NUM_CHANNEL, 0,
 				     &chmap_info);
 	if (ret < 0) {
 		pr_err("%s, channel map cntrl add failed\n", __func__);
@@ -2249,6 +2249,7 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 
+	mutex_lock(&pdata->lock);
 	pcm = pdata->pcm_device[fe_id];
 	if (!pcm) {
 		pr_err("%s invalid pcm handle for fe_id %llu\n",
@@ -2274,7 +2275,6 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 	chmixer_pspd->output_channel = ucontrol->value.integer.value[3];
 	chmixer_pspd->port_idx = ucontrol->value.integer.value[4];
 
-	mutex_lock(&pdata->lock);
 	/* cache value and take effect during adm_open stage */
 	msm_pcm_routing_set_channel_mixer_cfg(fe_id,
 			session_type,
@@ -2284,7 +2284,6 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 		prtd = substream->runtime->private_data;
 		if (!prtd) {
 			pr_err("%s find invalid prtd fail\n", __func__);
-			mutex_unlock(&pdata->lock);
 			return -EINVAL;
 		}
 
@@ -2297,8 +2296,8 @@ static int msm_pcm_channel_mixer_cfg_ctl_put(struct snd_kcontrol *kcontrol,
 					chmixer_pspd);
 		}
 	}
-	mutex_unlock(&pdata->lock);
 done:
+	mutex_unlock(&pdata->lock);
 	return ret;
 }
 
@@ -2531,7 +2530,7 @@ static int msm_pcm_channel_mixer_output_map_info(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = PCM_FORMAT_MAX_NUM_CHANNEL_V2;
+	uinfo->count = 32;
 	uinfo->value.integer.min = 1;
 	uinfo->value.integer.max = 64;
 	return 0;
@@ -2633,7 +2632,7 @@ static int msm_pcm_channel_mixer_input_map_info(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = PCM_FORMAT_MAX_NUM_CHANNEL_V2;
+	uinfo->count = 32;
 	uinfo->value.integer.min = 1;
 	uinfo->value.integer.max = 64;
 	return 0;
@@ -2848,7 +2847,7 @@ static int msm_pcm_channel_mixer_weight_info(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_info *uinfo)
 {
 	uinfo->type = SNDRV_CTL_ELEM_TYPE_INTEGER;
-	uinfo->count = PCM_FORMAT_MAX_NUM_CHANNEL_V2;
+	uinfo->count = 32;
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = 0x4000;
 	return 0;
